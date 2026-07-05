@@ -52,9 +52,19 @@ only needed on the first upload; harmless to keep including).
 
 1. Account at https://addons.mozilla.org (free), then https://addons.mozilla.org/developers/.
 2. "Submit a New Add-on" > "On this site" (listed) > upload `tab-wiki-firefox-store.zip`.
-3. When asked whether the code is minified/bundled: yes (esbuild, unminified) -
-   upload a source zip of the repo (`git archive -o source.zip HEAD`) and note
-   the build steps: `cd extension && npm install && npm run build`.
+3. When asked whether the code is minified/bundled: answer yes (esbuild is a
+   bundler). Create the source zip in a terminal at the repo root:
+
+   ```sh
+   git archive --format=zip -o ~/Desktop/tab-wiki-source.zip HEAD
+   ```
+
+   then browse to `~/Desktop/tab-wiki-source.zip` in the upload dialog.
+   `git archive` packages only git-tracked files: original TypeScript sources,
+   no `dist/` output, and never the gitignored `chromium-key.pem`.
+   Build steps (also in the zip's README and the reviewer notes):
+   `cd extension && npm ci && npm run build` with Node 20+.
+   Regenerate the zip from the matching tag for every new version you submit.
 4. Fill the listing from `store-listing.md`; privacy policy URL as above.
 5. Submit. Once approved, users install normally - no `about:config` flip.
 
