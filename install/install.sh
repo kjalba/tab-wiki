@@ -39,8 +39,9 @@ firefox_dirs=(
 )
 chromium_dirs=(
   "$APP_SUPPORT/Chromium/NativeMessagingHosts"
-  "$APP_SUPPORT/Helium/NativeMessagingHosts"
+  "$APP_SUPPORT/net.imput.helium/NativeMessagingHosts"
   "$APP_SUPPORT/Google/Chrome/NativeMessagingHosts"
+  "$APP_SUPPORT/Arc/User Data/NativeMessagingHosts"
 )
 
 echo "==> Writing Firefox-family native messaging manifests"
