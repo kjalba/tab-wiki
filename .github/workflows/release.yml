@@ -1,0 +1,51 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Build companion binaries
+        working-directory: companion
+        run: |
+          mkdir -p ../release
+          GOOS=darwin  GOARCH=arm64 go build -o ../release/tab-wiki-companion-darwin-arm64 .
+          GOOS=darwin  GOARCH=amd64 go build -o ../release/tab-wiki-companion-darwin-amd64 .
+          GOOS=linux   GOARCH=amd64 go build -o ../release/tab-wiki-companion-linux-amd64 .
+          GOOS=linux   GOARCH=arm64 go build -o ../release/tab-wiki-companion-linux-arm64 .
+
+      - name: Build extension bundles
+        working-directory: extension
+        run: |
+          npm ci
+          npm run build
+          (cd dist/firefox && zip -qr ../../../release/tab-wiki-firefox.zip .)
+          (cd dist/chromium && zip -qr ../../../release/tab-wiki-chromium.zip .)
+          cp -R dist/firefox /tmp/xpi
+          (cd /tmp/xpi && zip -qr "$GITHUB_WORKSPACE/release/tab-wiki.xpi" .)
+
+      - name: Checksums
+        working-directory: release
+        run: shasum -a 256 * > SHA256SUMS.txt
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
+          generate_release_notes: true

@@ -25,44 +25,63 @@ Zen / Helium                     native messaging              plain files
 
 ## Requirements
 
-- macOS, Go 1.22+, Node 20+ (build only)
+- macOS or Linux
 - At least one agent CLI on PATH: `claude` (default), `codex`, or `opencode`
 - git (for Archive history; optional but recommended)
 
-## Install
+## Quick start (no toolchain needed)
 
-### 1. Build everything
+Tab Wiki is two pieces: a browser extension and a small native Companion app that
+stores your wiki and calls your AI CLI. Both steps take about a minute.
+
+### 1. Install the Companion
 
 ```sh
-cd extension && npm install && npm run build && cd ..
-./install/install.sh        # builds the Companion, registers Firefox-family manifests
+curl -fsSL https://raw.githubusercontent.com/kjalba/tab-wiki/main/install/get.sh | bash
 ```
 
-### 2. Load the extension in Zen (Firefox-family)
+This downloads the prebuilt binary from the latest
+[GitHub release](https://github.com/kjalba/tab-wiki/releases) into
+`~/.local/bin` and registers it with your browsers (Zen, Firefox, Helium,
+Chrome, Chromium, Arc). Nothing runs in the background - browsers start it on
+demand.
 
-Temporary (resets on browser restart):
+### 2. Install the extension
 
-1. Open `about:debugging#/runtime/this-firefox`.
-2. "Load Temporary Add-on" and pick `extension/dist/firefox/manifest.json`.
+**From the stores** (easiest, once review completes):
 
-Permanent: set `xpinstall.signatures.required` to `false` in `about:config`,
-then open `about:addons`, click the gear icon, choose "Install Add-on From File",
-and pick `extension/dist/tab-wiki.xpi` (built by `install/install.sh`).
+- Firefox / Zen: *link pending AMO review*
+- Chrome / Helium: *link pending Chrome Web Store review*
 
-**Pin the toolbar button:** click the puzzle-piece Extensions icon near the address bar,
-find "Tab Wiki", click the gear next to it, and choose "Pin to Toolbar".
-If there's no puzzle-piece icon, right-click the top toolbar, choose "Customize Toolbar…",
-and drag the Tab Wiki icon onto the bar.
-You can also skip the button entirely: `Alt+Shift+C` cleans and `Alt+Shift+E` opens Explore.
+**From a GitHub release** (available now):
 
-### 3. Load the extension in Helium / Chrome (Chromium-family)
+- **Firefox / Zen:** download `tab-wiki.xpi` from the
+  [latest release](https://github.com/kjalba/tab-wiki/releases/latest).
+  Until the AMO-signed version is out, set `xpinstall.signatures.required`
+  to `false` in `about:config`, then open `about:addons` > gear icon >
+  "Install Add-on From File" and pick the `.xpi`.
+- **Chrome / Helium:** download and unzip `tab-wiki-chromium.zip`, open
+  `chrome://extensions`, enable Developer mode, "Load unpacked", select the
+  unzipped folder. The extension ID is pinned in the manifest, so the
+  Companion recognizes it with no extra configuration.
 
-1. Open `chrome://extensions`, enable Developer mode.
-2. "Load unpacked" and pick `extension/dist/chromium/`.
+### 3. Verify
 
-That's it - the manifest embeds a public `key`, so the extension ID is the same
-on every machine (`dekbipliihgnonlenepdooagogfibkgo`) and `install.sh` registers
-the native host for it automatically. No ID copying needed.
+Click the Tab Wiki toolbar icon (pin it via the puzzle-piece extensions menu).
+The popup should read `Archive: ~/tab-wiki` with your installed engines
+selectable. Press `Alt+Shift+C` to run your first Clean.
+
+## Building from source
+
+Requires Go 1.22+ and Node 20+:
+
+```sh
+git clone https://github.com/kjalba/tab-wiki && cd tab-wiki
+cd extension && npm install && cd ..
+./install/install.sh   # builds Companion + extension, registers native hosts, packages the .xpi
+```
+
+Then load the extension from `extension/dist/<browser>/` as in Quick start step 2.
 
 ## Use
 
