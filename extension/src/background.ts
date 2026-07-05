@@ -30,16 +30,25 @@ function hostOf(url: string): string {
   }
 }
 
-function domainExcluded(url: string, patterns: string[]): boolean {
+// Returns the tabignore pattern matching this URL's host, or null.
+function matchingIgnorePattern(url: string, patterns: string[]): string | null {
   const host = hostOf(url);
-  if (!host) return false;
-  return patterns.some((raw) => {
+  if (!host) return null;
+  for (const raw of patterns) {
     const p = raw.toLowerCase().replace(/^\*\./, "");
     // A bare word ("capitalone") matches any hostname containing it;
     // a domain ("capitalone.com") matches that domain and its subdomains.
-    if (!p.includes(".")) return host.includes(p);
-    return host === p || host.endsWith("." + p);
-  });
+    if (!p.includes(".")) {
+      if (host.includes(p)) return raw;
+    } else if (host === p || host.endsWith("." + p)) {
+      return raw;
+    }
+  }
+  return null;
+}
+
+function domainExcluded(url: string, patterns: string[]): boolean {
+  return matchingIgnorePattern(url, patterns) !== null;
 }
 
 // ---- Snippet capture (runs inside the page) ----
@@ -256,6 +265,11 @@ api.runtime.onMessage.addListener((msg: PageMessage, _sender, sendResponse) => {
       }
       case "addIgnoreDomain":
         return companion({ cmd: "addIgnore", domain: msg.domain });
+      case "ignoreStatus": {
+        const resp = await companionOk({ cmd: "ignoreList" });
+        const pattern = matchingIgnorePattern(msg.url, resp.domains ?? []);
+        return { ok: true, pattern };
+      }
       case "openExplore":
         await openExplore();
         return { ok: true };

@@ -119,19 +119,41 @@ async function init() {
     excludeBox.addEventListener("change", () => void send({ kind: "toggleExclude", tabId }));
 
     const ignoreBtn = $<HTMLButtonElement>("ignoreDomain");
+    const ignoreNote = $("ignoreNote");
     let host = "";
     try {
       if (tab.url && /^https?:/i.test(tab.url)) host = new URL(tab.url).hostname;
     } catch { /* ignore */ }
-    if (host) {
+    if (host && tab.url) {
       const bare = host.replace(/^www\./, "");
-      ignoreBtn.textContent = `Always exclude ${bare}`;
-      ignoreBtn.classList.remove("hidden");
-      ignoreBtn.addEventListener("click", async () => {
-        ignoreBtn.disabled = true;
-        const r = await send({ kind: "addIgnoreDomain", domain: bare });
-        ignoreBtn.textContent = r.ok ? `${bare} added to tabignore` : r.error ?? "Failed";
+      const showExcluded = (pattern: string) => {
+        ignoreBtn.classList.add("hidden");
+        ignoreNote.textContent =
+          pattern === bare
+            ? `✓ ${bare} is permanently excluded`
+            : `✓ ${bare} is permanently excluded (tabignore: "${pattern}")`;
+        ignoreNote.classList.remove("hidden");
+      };
+
+      const status = await send<{ ok: boolean; pattern?: string | null }>({
+        kind: "ignoreStatus",
+        url: tab.url,
       });
+      if (status.ok && status.pattern) {
+        showExcluded(status.pattern);
+      } else {
+        ignoreBtn.textContent = `Always exclude ${bare}`;
+        ignoreBtn.classList.remove("hidden");
+        ignoreBtn.addEventListener("click", async () => {
+          ignoreBtn.disabled = true;
+          const r = await send({ kind: "addIgnoreDomain", domain: bare });
+          if (r.ok) {
+            showExcluded(bare);
+          } else {
+            ignoreBtn.textContent = r.error ?? "Failed";
+          }
+        });
+      }
     }
   } else {
     excludeBox.disabled = true;
