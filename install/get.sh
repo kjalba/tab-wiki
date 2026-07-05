@@ -30,8 +30,17 @@ ASSET="tab-wiki-companion-$OS-$ARCH"
 
 echo "==> Downloading latest Companion ($ASSET)"
 mkdir -p "$BIN_DIR"
-curl -fsSL "https://github.com/$REPO/releases/latest/download/$ASSET" -o "$BIN_PATH"
-chmod +x "$BIN_PATH"
+TMP_BIN=$(mktemp)
+curl -fsSL "https://github.com/$REPO/releases/latest/download/$ASSET" -o "$TMP_BIN"
+chmod +x "$TMP_BIN"
+if [ "$OS" = "darwin" ]; then
+  # Cross-compiled Go binaries can arrive with a signature the Apple Silicon
+  # kernel rejects (SIGKILL on launch); an ad-hoc re-sign always validates.
+  # The mv (new inode) also avoids the kernel's stale-signature cache when
+  # replacing an existing binary in place.
+  codesign --force -s - "$TMP_BIN" 2>/dev/null || true
+fi
+mv -f "$TMP_BIN" "$BIN_PATH"
 echo "    installed $BIN_PATH"
 
 if [ "$OS" = "darwin" ]; then
