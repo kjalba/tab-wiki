@@ -29,10 +29,11 @@ function setEngineSummary(engine: string, model: string) {
   $("engineSummary").textContent = `${engine} / ${displayModel(model)}`;
 }
 
-function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!
-  );
+function el(tag: string, className: string, text?: string): HTMLElement {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
 }
 
 function matches(e: Entry, topicName: string, q: string): boolean {
@@ -43,27 +44,35 @@ function matches(e: Entry, topicName: string, q: string): boolean {
 
 function entryRow(topicName: string, e: Entry): HTMLLIElement {
   const li = document.createElement("li");
-  const meta = e.opened
-    ? `captured ${e.captured} - opened ${e.opened}`
-    : `captured ${e.captured}`;
-  li.innerHTML =
-    `<div class="grow">` +
-    `<a href="#" class="open">${escapeHtml(e.title)}</a>` +
-    (e.stale ? ' <span class="badge stale">stale</span>' : "") +
-    (e.note ? `<div class="note">${escapeHtml(e.note)}</div>` : "") +
-    `</div>` +
-    `<span class="meta">${meta}</span>` +
-    `<button class="danger-ghost delete" title="Delete entry">delete</button>`;
 
-  li.querySelector<HTMLAnchorElement>("a.open")!.addEventListener("click", (ev) => {
+  const grow = el("div", "grow");
+  const link = el("a", "open", e.title) as HTMLAnchorElement;
+  link.href = "#";
+  link.addEventListener("click", (ev) => {
     ev.preventDefault();
     void send({ kind: "openEntry", url: e.url }).then(load);
   });
-  li.querySelector<HTMLButtonElement>("button.delete")!.addEventListener("click", async () => {
+  grow.appendChild(link);
+  if (e.stale) {
+    grow.appendChild(document.createTextNode(" "));
+    grow.appendChild(el("span", "badge stale", "stale"));
+  }
+  if (e.note) grow.appendChild(el("div", "note", e.note));
+  li.appendChild(grow);
+
+  const meta = e.opened
+    ? `captured ${e.captured} - opened ${e.opened}`
+    : `captured ${e.captured}`;
+  li.appendChild(el("span", "meta", meta));
+
+  const del = el("button", "danger-ghost delete", "delete") as HTMLButtonElement;
+  del.title = "Delete entry";
+  del.addEventListener("click", async () => {
     if (!confirm(`Delete "${e.title}" from ${topicName}?`)) return;
     await send({ kind: "deleteEntry", topic: topicName, url: e.url });
     await load();
   });
+  li.appendChild(del);
   return li;
 }
 
@@ -94,12 +103,11 @@ function topicCard(t: ExploreTopic, q: string): HTMLElement | null {
   const header = document.createElement("summary");
   header.className = "topic-header";
   const staleCount = entries.filter((e) => e.stale).length;
-  header.innerHTML =
-    `<span class="chev">▾</span>` +
-    `<h2>${escapeHtml(t.name)}</h2>` +
-    `<span class="badge">${entries.length}</span>` +
-    (staleCount ? `<span class="badge stale">${staleCount} stale</span>` : "") +
-    `<span class="spacer"></span>`;
+  header.appendChild(el("span", "chev", "▾"));
+  header.appendChild(el("h2", "", t.name));
+  header.appendChild(el("span", "badge", String(entries.length)));
+  if (staleCount) header.appendChild(el("span", "badge stale", `${staleCount} stale`));
+  header.appendChild(el("span", "spacer"));
 
   if (entries.length > 0) {
     const openAll = summaryButton(document.createElement("button"));
@@ -150,7 +158,9 @@ function topicCard(t: ExploreTopic, q: string): HTMLElement | null {
   ul.className = "entries";
   for (const e of entries) ul.appendChild(entryRow(t.name, e));
   if (entries.length === 0) {
-    ul.innerHTML = '<li><span class="dim">Empty.</span></li>';
+    const li = document.createElement("li");
+    li.appendChild(el("span", "dim", "Empty."));
+    ul.appendChild(li);
   }
   card.appendChild(ul);
   return card;
@@ -159,7 +169,7 @@ function topicCard(t: ExploreTopic, q: string): HTMLElement | null {
 function render() {
   const q = $<HTMLInputElement>("filter").value.trim();
   const container = $("topics");
-  container.innerHTML = "";
+  container.replaceChildren();
 
   // Inbox first when non-empty, then topics by size.
   const sorted = [...topics].sort((a, b) => {

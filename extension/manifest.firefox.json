@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Tab Wiki",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Clean all open tabs into a local Markdown wiki, grouped by AI, and explore them later.",
   "permissions": [
     "tabs",
@@ -48,7 +48,12 @@
   "browser_specific_settings": {
     "gecko": {
       "id": "tabwiki@kjalba.dev",
-      "strict_min_version": "121.0"
+      "strict_min_version": "142.0",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
     }
   }
 }

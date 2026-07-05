@@ -8,8 +8,18 @@ const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as 
 
 const cleanId = new URLSearchParams(location.search).get("id") ?? "";
 
-function stat(num: number | string, label: string): string {
-  return `<div class="stat"><div class="num">${num}</div><div class="label">${label}</div></div>`;
+function el(tag: string, className: string, text?: string): HTMLElement {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function stat(num: number | string, label: string): HTMLElement {
+  const wrap = el("div", "stat");
+  wrap.appendChild(el("div", "num", String(num)));
+  wrap.appendChild(el("div", "label", label));
+  return wrap;
 }
 
 async function init() {
@@ -27,39 +37,58 @@ async function init() {
   const excludedTotal =
     receipt.excluded.byFile + receipt.excluded.byToggle + receipt.excluded.pinned;
   $("summary").textContent = `Clean ${receipt.cleanId}`;
-  $("stats").innerHTML =
-    stat(receipt.total, "captured") +
-    stat(receipt.filed, "filed") +
-    stat(receipt.refreshed, "refreshed") +
-    stat(receipt.inboxed, "inbox") +
-    stat(excludedTotal, "excluded");
+  const stats = $("stats");
+  stats.replaceChildren(
+    stat(receipt.total, "captured"),
+    stat(receipt.filed, "filed"),
+    stat(receipt.refreshed, "refreshed"),
+    stat(receipt.inboxed, "inbox"),
+    stat(excludedTotal, "excluded")
+  );
 
   if (excludedTotal > 0) {
-    $("stats").innerHTML += `<div class="stat"><div class="label" style="margin-top:16px">
-      (${receipt.excluded.byFile} by ignore file, ${receipt.excluded.byToggle} by checkmark, ${receipt.excluded.pinned} pinned)
-    </div></div>`;
+    const breakdown = el("div", "stat");
+    const label = el(
+      "div",
+      "label",
+      `(${receipt.excluded.byFile} by ignore file, ${receipt.excluded.byToggle} by checkmark, ${receipt.excluded.pinned} pinned)`
+    );
+    label.style.marginTop = "16px";
+    breakdown.appendChild(label);
+    stats.appendChild(breakdown);
   }
 
   if (receipt.engineError) {
-    $("engineError").innerHTML =
-      `<p class="warn">Engine unavailable - tabs were saved to the Inbox without Notes. ` +
-      `Run Refile from Explore once the engine works.<br><span class="dim">${escapeHtml(receipt.engineError)}</span></p>`;
+    const p = el(
+      "p",
+      "warn",
+      "Engine unavailable - tabs were saved to the Inbox without Notes. Run Refile from Explore once the engine works."
+    );
+    p.appendChild(document.createElement("br"));
+    p.appendChild(el("span", "dim", receipt.engineError));
+    $("engineError").replaceChildren(p);
   }
   if (receipt.gitWarning) {
-    $("gitWarning").innerHTML = `<p class="warn">${escapeHtml(receipt.gitWarning)}</p>`;
+    $("gitWarning").replaceChildren(el("p", "warn", receipt.gitWarning));
   }
 
   const topics = $("topics");
-  topics.innerHTML = "";
+  topics.replaceChildren();
   for (const t of receipt.topics) {
     const li = document.createElement("li");
-    li.innerHTML =
-      `<span class="grow">${escapeHtml(t.name)}${t.new ? ' <span class="badge new">new topic</span>' : ""}</span>` +
-      `<span class="meta">${t.count} ${t.count === 1 ? "entry" : "entries"}</span>`;
+    const name = el("span", "grow", t.name);
+    if (t.new) {
+      name.appendChild(document.createTextNode(" "));
+      name.appendChild(el("span", "badge new", "new topic"));
+    }
+    li.appendChild(name);
+    li.appendChild(el("span", "meta", `${t.count} ${t.count === 1 ? "entry" : "entries"}`));
     topics.appendChild(li);
   }
   if (receipt.topics.length === 0) {
-    topics.innerHTML = '<li><span class="dim">Nothing new was filed (all tabs were refreshes or excluded).</span></li>';
+    const li = document.createElement("li");
+    li.appendChild(el("span", "dim", "Nothing new was filed (all tabs were refreshes or excluded)."));
+    topics.appendChild(li);
   }
 
   const undoBtn = $<HTMLButtonElement>("undo");
@@ -85,12 +114,6 @@ async function init() {
   }
 
   $("explore").addEventListener("click", () => void send({ kind: "openExplore" }));
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!
-  );
 }
 
 void init().catch((e: Error) => {

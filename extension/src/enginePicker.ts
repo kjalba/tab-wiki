@@ -29,7 +29,7 @@ export async function mountEnginePicker(
   function renderModels(engineName: string, model: string) {
     const eng = engines.find((e) => e.name === engineName);
     const models = eng?.models ?? [];
-    modelSel.innerHTML = "";
+    modelSel.replaceChildren();
     for (const m of models) {
       const opt = document.createElement("option");
       opt.value = m;
@@ -47,7 +47,7 @@ export async function mountEnginePicker(
   }
 
   function renderEngines() {
-    listEl.innerHTML = "";
+    listEl.replaceChildren();
     for (const e of engines) {
       const row = document.createElement("button");
       row.type = "button";
