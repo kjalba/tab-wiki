@@ -11,6 +11,18 @@ let topics: ExploreTopic[] = [];
 let currentEngine = "";
 let currentModel = "";
 
+// Collapsed-topic names, persisted across sessions.
+let collapsed = new Set<string>();
+
+async function loadCollapsed(): Promise<void> {
+  const data = await api.storage.local.get("collapsedTopics");
+  collapsed = new Set((data.collapsedTopics as string[] | undefined) ?? []);
+}
+
+function saveCollapsed(): void {
+  void api.storage.local.set({ collapsedTopics: [...collapsed] });
+}
+
 function setEngineSummary(engine: string, model: string) {
   currentEngine = engine;
   currentModel = model;
@@ -55,24 +67,42 @@ function entryRow(topicName: string, e: Entry): HTMLLIElement {
   return li;
 }
 
+// Buttons that live inside a <summary> must not toggle the card.
+function summaryButton(btn: HTMLButtonElement): HTMLButtonElement {
+  btn.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+  });
+  return btn;
+}
+
 function topicCard(t: ExploreTopic, q: string): HTMLElement | null {
   const entries = (t.entries ?? []).filter((e) => matches(e, t.name, q));
   if (entries.length === 0 && q) return null;
 
-  const card = document.createElement("div");
-  card.className = "card";
+  const card = document.createElement("details");
+  card.className = "card topic-card";
+  // A filter overrides collapse state so matches are always visible.
+  card.open = q ? true : !collapsed.has(t.name);
+  card.addEventListener("toggle", () => {
+    if ($<HTMLInputElement>("filter").value.trim()) return; // don't persist filter-forced state
+    if (card.open) collapsed.delete(t.name);
+    else collapsed.add(t.name);
+    saveCollapsed();
+  });
 
-  const header = document.createElement("div");
+  const header = document.createElement("summary");
   header.className = "topic-header";
   const staleCount = entries.filter((e) => e.stale).length;
   header.innerHTML =
+    `<span class="chev">▾</span>` +
     `<h2>${escapeHtml(t.name)}</h2>` +
     `<span class="badge">${entries.length}</span>` +
     (staleCount ? `<span class="badge stale">${staleCount} stale</span>` : "") +
     `<span class="spacer"></span>`;
 
   if (entries.length > 0) {
-    const openAll = document.createElement("button");
+    const openAll = summaryButton(document.createElement("button"));
     openAll.textContent = "Open all";
     openAll.addEventListener("click", () => {
       void send({ kind: "openAll", urls: entries.map((e) => e.url) }).then(load);
@@ -82,7 +112,7 @@ function topicCard(t: ExploreTopic, q: string): HTMLElement | null {
 
   if (t.name === "inbox") {
     if ((t.entries ?? []).length > 0) {
-      const refile = document.createElement("button");
+      const refile = summaryButton(document.createElement("button"));
       refile.textContent = "Refile";
       refile.title = "Re-run the Engine over the Inbox";
       refile.addEventListener("click", async () => {
@@ -101,12 +131,14 @@ function topicCard(t: ExploreTopic, q: string): HTMLElement | null {
       header.appendChild(refile);
     }
   } else {
-    const del = document.createElement("button");
+    const del = summaryButton(document.createElement("button"));
     del.className = "danger-ghost";
     del.textContent = "delete topic";
     del.addEventListener("click", async () => {
       if (!confirm(`Delete the whole topic "${t.name}" and all its entries?`)) return;
       await send({ kind: "deleteTopic", topic: t.name });
+      collapsed.delete(t.name);
+      saveCollapsed();
       await load();
     });
     header.appendChild(del);
@@ -164,6 +196,16 @@ async function load() {
 
 $("filter").addEventListener("input", render);
 $("refresh").addEventListener("click", () => void load());
+$("collapseAll").addEventListener("click", () => {
+  collapsed = new Set(topics.map((t) => t.name));
+  saveCollapsed();
+  render();
+});
+$("expandAll").addEventListener("click", () => {
+  collapsed.clear();
+  saveCollapsed();
+  render();
+});
 $("reorganize").addEventListener("click", async () => {
   const instruction = prompt(
     `Reorganize using ${currentEngine} / ${displayModel(currentModel)} ` +
@@ -186,7 +228,9 @@ $("reorganize").addEventListener("click", async () => {
 void mountEnginePicker($("engines"), $<HTMLSelectElement>("model"), setEngineSummary).then(
   (picker) => setEngineSummary(picker.activeEngine, picker.activeModel)
 );
-void load().catch((e: Error) => {
-  $("subtitle").textContent = e.message;
-  $("subtitle").className = "error";
-});
+void loadCollapsed()
+  .then(load)
+  .catch((e: Error) => {
+    $("subtitle").textContent = e.message;
+    $("subtitle").className = "error";
+  });
