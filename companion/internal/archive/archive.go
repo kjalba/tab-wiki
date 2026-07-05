@@ -85,7 +85,9 @@ func Init(dir string) error {
 		content := strings.Join([]string{
 			"# tab-wiki ignore file: tabs on these domains are Excluded.",
 			"# Excluded means invisible: never read, never archived, left open by Clean.",
-			"# One pattern per line. \"example.com\" matches the domain and subdomains.",
+			"# One pattern per line.",
+			"#   example.com   matches example.com and all subdomains",
+			"#   capitalone    (no dot) matches any hostname containing the word",
 			"#",
 			"# mail.google.com",
 			"# online-banking.example.com",

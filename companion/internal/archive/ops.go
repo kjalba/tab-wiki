@@ -270,6 +270,29 @@ func Undo(dir string, cfg config.Config, cleanID string) ([]engine.Tab, error) {
 	return log.Tabs, nil
 }
 
+// AddIgnoreDomain appends a domain to the tabignore file (idempotent).
+func AddIgnoreDomain(dir string, cfg config.Config, domain string) error {
+	domain = strings.ToLower(strings.TrimSpace(domain))
+	if domain == "" {
+		return fmt.Errorf("empty domain")
+	}
+	for _, d := range IgnoreDomains(dir) {
+		if d == domain {
+			return nil
+		}
+	}
+	f, err := os.OpenFile(filepath.Join(dir, "tabignore"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	if _, err := f.WriteString(domain + "\n"); err != nil {
+		return err
+	}
+	gitutil.Commit(dir, "Ignore domain: "+domain, cfg.AutoPush)
+	return nil
+}
+
 // ExploreTopic is the Explore page's view of one Topic.
 type ExploreTopic struct {
 	Name    string  `json:"name"`

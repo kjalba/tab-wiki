@@ -32,6 +32,7 @@ type request struct {
 	Instruction string                `json:"instruction,omitempty"`
 	Engine      string                `json:"engine,omitempty"`
 	Model       string                `json:"model,omitempty"`
+	Domain      string                `json:"domain,omitempty"`
 }
 
 type response struct {
@@ -128,6 +129,14 @@ func dispatch(dir string, req request) response {
 
 	case "ignoreList":
 		return response{OK: true, Domains: archive.IgnoreDomains(dir)}
+
+	case "addIgnore":
+		return withLock(dir, func() response {
+			if err := archive.AddIgnoreDomain(dir, cfg, req.Domain); err != nil {
+				return errResp(err)
+			}
+			return response{OK: true, Domains: archive.IgnoreDomains(dir)}
+		})
 
 	case "clean":
 		return withLock(dir, func() response {

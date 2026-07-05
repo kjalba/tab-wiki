@@ -55,15 +55,14 @@ If there's no puzzle-piece icon, right-click the top toolbar, choose "Customize 
 and drag the Tab Wiki icon onto the bar.
 You can also skip the button entirely: `Alt+Shift+C` cleans and `Alt+Shift+E` opens Explore.
 
-### 3. Load the extension in Helium (Chromium-family)
+### 3. Load the extension in Helium / Chrome (Chromium-family)
 
-1. Open the extensions page, enable Developer mode.
+1. Open `chrome://extensions`, enable Developer mode.
 2. "Load unpacked" and pick `extension/dist/chromium/`.
-3. Copy the extension ID it shows, then register the native host for it:
 
-```sh
-./install/install.sh <extension-id>
-```
+That's it - the manifest embeds a public `key`, so the extension ID is the same
+on every machine (`dekbipliihgnonlenepdooagogfibkgo`) and `install.sh` registers
+the native host for it automatically. No ID copying needed.
 
 ## Use
 
@@ -72,7 +71,7 @@ You can also skip the button entirely: `Alt+Shift+C` cleans and `Alt+Shift+E` op
 | Clean | Toolbar popup button, or `Alt+Shift+C` |
 | Explore | Popup button, or `Alt+Shift+E` |
 | Exclude a tab | Checkmark in the popup (per-tab) |
-| Exclude a domain | Add it to `~/tab-wiki/tabignore` |
+| Exclude a domain | "Always exclude <domain>" button in the popup, or edit `~/tab-wiki/tabignore` |
 | Switch Engine/model | Dropdowns in the popup |
 | Undo a Clean | Button on the Receipt (latest Clean only, while the Receipt is open) |
 | Refile the Inbox | Button on the Inbox card in Explore, with optional guidance |
@@ -84,7 +83,7 @@ You can also skip the button entirely: `Alt+Shift+C` cleans and `Alt+Shift+E` op
 ├── topics/*.md      # the wiki: one file per Topic, one line per Entry
 ├── cleans/*.json    # machine-owned log per Clean (receipts + undo)
 ├── config.json      # engines, models, staleness threshold, auto-push
-└── tabignore        # excluded domains, gitignore-style
+└── tabignore        # excluded domains: "x.com" = domain+subdomains, bare word = substring
 ```
 
 Entry format:

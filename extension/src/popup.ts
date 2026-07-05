@@ -110,13 +110,29 @@ exploreBtn.addEventListener("click", async () => {
 });
 
 async function init() {
-  // Per-tab exclude toggle for the active tab.
+  // Per-tab exclude toggle + permanent domain ignore for the active tab.
   const [tab] = await api.tabs.query({ active: true, currentWindow: true });
   if (tab?.id !== undefined) {
     const tabId = tab.id;
     const state = await send<{ excluded?: boolean }>({ kind: "isExcluded", tabId });
     excludeBox.checked = !!state.excluded;
     excludeBox.addEventListener("change", () => void send({ kind: "toggleExclude", tabId }));
+
+    const ignoreBtn = $<HTMLButtonElement>("ignoreDomain");
+    let host = "";
+    try {
+      if (tab.url && /^https?:/i.test(tab.url)) host = new URL(tab.url).hostname;
+    } catch { /* ignore */ }
+    if (host) {
+      const bare = host.replace(/^www\./, "");
+      ignoreBtn.textContent = `Always exclude ${bare}`;
+      ignoreBtn.classList.remove("hidden");
+      ignoreBtn.addEventListener("click", async () => {
+        ignoreBtn.disabled = true;
+        const r = await send({ kind: "addIgnoreDomain", domain: bare });
+        ignoreBtn.textContent = r.ok ? `${bare} added to tabignore` : r.error ?? "Failed";
+      });
+    }
   } else {
     excludeBox.disabled = true;
   }

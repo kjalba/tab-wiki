@@ -35,6 +35,9 @@ function domainExcluded(url: string, patterns: string[]): boolean {
   if (!host) return false;
   return patterns.some((raw) => {
     const p = raw.toLowerCase().replace(/^\*\./, "");
+    // A bare word ("capitalone") matches any hostname containing it;
+    // a domain ("capitalone.com") matches that domain and its subdomains.
+    if (!p.includes(".")) return host.includes(p);
     return host === p || host.endsWith("." + p);
   });
 }
@@ -251,6 +254,8 @@ api.runtime.onMessage.addListener((msg: PageMessage, _sender, sendResponse) => {
         const ids = await getExcludedTabIds();
         return { ok: true, excluded: ids.includes(msg.tabId) };
       }
+      case "addIgnoreDomain":
+        return companion({ cmd: "addIgnore", domain: msg.domain });
       case "openExplore":
         await openExplore();
         return { ok: true };

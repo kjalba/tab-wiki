@@ -12,7 +12,10 @@ set -euo pipefail
 
 HOST_NAME="com.kjalba.tabwiki"
 FIREFOX_EXT_ID="tabwiki@kjalba.dev"
-CHROMIUM_EXT_ID="${1:-}"
+# Stable ID derived from the "key" field in manifest.chromium.json - identical
+# on every machine, so no per-user ID lookup is needed. Pass an ID argument
+# only to override (e.g. loading a modified manifest without the key).
+CHROMIUM_EXT_ID="${1:-dekbipliihgnonlenepdooagogfibkgo}"
 
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 BIN_DIR="$HOME/.local/bin"
@@ -59,11 +62,10 @@ EOF
   echo "    $dir/$HOST_NAME.json"
 done
 
-if [ -n "$CHROMIUM_EXT_ID" ]; then
-  echo "==> Writing Chromium-family native messaging manifests"
-  for dir in "${chromium_dirs[@]}"; do
-    mkdir -p "$dir"
-    cat > "$dir/$HOST_NAME.json" <<EOF
+echo "==> Writing Chromium-family native messaging manifests (extension id: $CHROMIUM_EXT_ID)"
+for dir in "${chromium_dirs[@]}"; do
+  mkdir -p "$dir"
+  cat > "$dir/$HOST_NAME.json" <<EOF
 {
   "name": "$HOST_NAME",
   "description": "tab-wiki Companion",
@@ -72,13 +74,8 @@ if [ -n "$CHROMIUM_EXT_ID" ]; then
   "allowed_origins": ["chrome-extension://$CHROMIUM_EXT_ID/"]
 }
 EOF
-    echo "    $dir/$HOST_NAME.json"
-  done
-else
-  echo "==> Skipping Chromium-family manifests (no extension ID given)."
-  echo "    After loading the unpacked extension in Helium, rerun:"
-  echo "    ./install.sh <extension-id>"
-fi
+  echo "    $dir/$HOST_NAME.json"
+done
 
 if [ -d "$REPO_DIR/extension/dist/firefox" ]; then
   echo "==> Packaging .xpi for permanent Firefox-family install"

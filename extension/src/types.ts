@@ -84,6 +84,7 @@ export type PageMessage =
   | { kind: "setEngine"; engine: string; model: string }
   | { kind: "toggleExclude"; tabId: number }
   | { kind: "isExcluded"; tabId: number }
+  | { kind: "addIgnoreDomain"; domain: string }
   | { kind: "openExplore" };
 
 export interface StoredReceipt {

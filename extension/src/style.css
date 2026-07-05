@@ -85,6 +85,8 @@ a:hover { text-decoration: underline; }
 .popup .check { display: flex; gap: 8px; align-items: center; cursor: pointer; }
 .popup .check input { accent-color: var(--accent); }
 
+.hidden { display: none; }
+
 .field { display: flex; flex-direction: column; gap: 6px; }
 .field > label { color: var(--dim); font-size: 12px; }
 
