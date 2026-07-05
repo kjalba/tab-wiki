@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Tab Wiki - Receipt</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page">
+    <div class="card">
+      <h1>Clean complete</h1>
+      <div id="summary" class="dim">Loading receipt...</div>
+      <div class="stat-row" id="stats"></div>
+      <div id="engineError"></div>
+      <div id="gitWarning"></div>
+    </div>
+    <div class="card">
+      <h2>Filed into</h2>
+      <ul class="entries" id="topics"></ul>
+    </div>
+    <div class="card">
+      <button id="undo" class="primary" disabled>Undo - reopen everything</button>
+      <button id="explore">Explore the wiki</button>
+      <div id="message" class="dim" style="margin-top:8px"></div>
+    </div>
+  </div>
+  <script src="receipt.js"></script>
+</body>
+</html>

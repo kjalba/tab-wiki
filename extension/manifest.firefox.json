@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "Tab Wiki",
+  "version": "0.1.0",
+  "description": "Clean all open tabs into a local Markdown wiki, grouped by AI, and explore them later.",
+  "permissions": ["tabs", "nativeMessaging", "scripting", "storage"],
+  "host_permissions": ["<all_urls>"],
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Tab Wiki",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png"
+    }
+  },
+  "commands": {
+    "clean": {
+      "suggested_key": { "default": "Alt+Shift+C" },
+      "description": "Clean: archive and close all tabs"
+    },
+    "explore": {
+      "suggested_key": { "default": "Alt+Shift+E" },
+      "description": "Explore the tab wiki"
+    }
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "tabwiki@kjalba.dev",
+      "strict_min_version": "121.0"
+    }
+  }
+}
