@@ -196,6 +196,15 @@ func dispatch(dir string, req request) response {
 			return response{OK: true, Moved: moved, Remaining: remaining}
 		})
 
+	case "reorganize":
+		return withLock(dir, func() response {
+			moved, err := archive.Reorganize(dir, cfg, req.Instruction)
+			if err != nil {
+				return errResp(err)
+			}
+			return response{OK: true, Moved: moved}
+		})
+
 	case "setEngine":
 		return withLock(dir, func() response {
 			if req.Engine != "" {

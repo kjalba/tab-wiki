@@ -97,6 +97,26 @@ func Init(dir string) error {
 			return err
 		}
 	}
+	guidelinesPath := filepath.Join(dir, "guidelines.md")
+	if _, err := os.Stat(guidelinesPath); os.IsNotExist(err) {
+		content := strings.Join([]string{
+			"# Filing guidelines",
+			"",
+			"<!--",
+			"Standing guidance the Engine reads on every Clean, Refile, and Reorganize.",
+			"Write plain sentences below this comment block; headings and HTML comments",
+			"are stripped before the Engine sees the file. Examples:",
+			"",
+			"- Tabs about github.com/me/foo or its documentation belong in the topic foo-project.",
+			"- Keep all shopping tabs in one shopping topic, not one topic per store.",
+			"- People profiles (LinkedIn, personal sites) go in people-to-connect.",
+			"-->",
+			"",
+		}, "\n")
+		if err := os.WriteFile(guidelinesPath, []byte(content), 0o644); err != nil {
+			return err
+		}
+	}
 	inboxPath := filepath.Join(dir, TopicsDir, InboxName+".md")
 	if _, err := os.Stat(inboxPath); os.IsNotExist(err) {
 		content := "# inbox\n\nEntries waiting to be filed: Engine failures and tabs the Engine could not classify.\nRun Refile to distribute them into real Topics.\n"
@@ -111,6 +131,26 @@ func Init(dir string) error {
 		}
 	}
 	return nil
+}
+
+var htmlCommentRe = regexp.MustCompile(`(?s)<!--.*?-->`)
+
+// Guidelines returns the user's standing grouping guidance from
+// guidelines.md, with HTML comments and Markdown headings stripped so the
+// template's own instructions never reach the Engine.
+func Guidelines(dir string) string {
+	data, err := os.ReadFile(filepath.Join(dir, "guidelines.md"))
+	if err != nil {
+		return ""
+	}
+	text := htmlCommentRe.ReplaceAllString(string(data), "")
+	var lines []string
+	for _, line := range strings.Split(text, "\n") {
+		if trimmed := strings.TrimSpace(line); trimmed != "" && !strings.HasPrefix(trimmed, "#") {
+			lines = append(lines, trimmed)
+		}
+	}
+	return strings.Join(lines, "\n")
 }
 
 // IgnoreDomains returns the non-comment patterns from tabignore.

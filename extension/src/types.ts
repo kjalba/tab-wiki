@@ -81,6 +81,7 @@ export type PageMessage =
   | { kind: "deleteEntry"; topic: string; url: string }
   | { kind: "deleteTopic"; topic: string }
   | { kind: "refile"; instruction: string }
+  | { kind: "reorganize"; instruction: string }
   | { kind: "setEngine"; engine: string; model: string }
   | { kind: "toggleExclude"; tabId: number }
   | { kind: "isExcluded"; tabId: number }

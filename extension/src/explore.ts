@@ -155,6 +155,22 @@ async function load() {
 
 $("filter").addEventListener("input", render);
 $("refresh").addEventListener("click", () => void load());
+$("reorganize").addEventListener("click", async () => {
+  const instruction = prompt(
+    'Describe how to regroup existing entries, e.g.\n' +
+      '"merge clothes-shopping and tech-shopping into shopping" or\n' +
+      '"everything about my foo project (repo, docs, issues) goes under foo-project"'
+  );
+  if (!instruction?.trim()) return;
+  const btn = $<HTMLButtonElement>("reorganize");
+  btn.disabled = true;
+  btn.textContent = "Reorganizing...";
+  const r = await send({ kind: "reorganize", instruction: instruction.trim() });
+  btn.disabled = false;
+  btn.textContent = "Reorganize...";
+  alert(r.ok ? `Moved ${r.moved ?? 0} entries.` : `Reorganize failed: ${r.error}`);
+  await load();
+});
 void load().catch((e: Error) => {
   $("subtitle").textContent = e.message;
   $("subtitle").className = "error";

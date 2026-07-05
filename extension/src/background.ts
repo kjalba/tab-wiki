@@ -249,6 +249,8 @@ api.runtime.onMessage.addListener((msg: PageMessage, _sender, sendResponse) => {
         return companion({ cmd: "deleteTopic", topic: msg.topic });
       case "refile":
         return companion({ cmd: "refile", instruction: msg.instruction });
+      case "reorganize":
+        return companion({ cmd: "reorganize", instruction: msg.instruction });
       case "setEngine":
         return companion({ cmd: "setEngine", engine: msg.engine, model: msg.model });
       case "toggleExclude": {

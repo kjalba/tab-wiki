@@ -16,11 +16,13 @@ import (
 	"github.com/kjalba/tab-wiki/companion/internal/config"
 )
 
-// Tab is what the Extension captured for one open tab.
+// Tab is what the Extension captured for one open tab. During Reorganize,
+// Topic carries the entry's current placement so the Engine can keep it.
 type Tab struct {
 	URL     string `json:"url"`
 	Title   string `json:"title"`
 	Snippet string `json:"snippet,omitempty"`
+	Topic   string `json:"topic,omitempty"`
 	// Window/index are recorded for undo; the Engine never sees them.
 	WindowID int `json:"windowId"`
 	Index    int `json:"index"`
@@ -88,17 +90,21 @@ func listModels(argv []string) []string {
 }
 
 // File asks the active Engine to assign each tab a Topic and Note.
-func File(cfg config.Config, tabs []Tab, existingTopics []string, instruction string) ([]Assignment, error) {
+// guidelines is the user's standing grouping guidance (guidelines.md).
+// When inboxFallback is true, tabs the Engine failed to cover land in the
+// inbox; when false (Reorganize), uncovered tabs are simply omitted so an
+// incomplete Engine response can never move entries it said nothing about.
+func File(cfg config.Config, tabs []Tab, existingTopics []string, instruction, guidelines string, inboxFallback bool) ([]Assignment, error) {
 	eng, err := findEngine(cfg, cfg.ActiveEngine)
 	if err != nil {
 		return nil, err
 	}
-	prompt := buildPrompt(tabs, existingTopics, instruction)
+	prompt := buildPrompt(tabs, existingTopics, instruction, guidelines)
 	raw, err := invoke(cfg, eng, prompt)
 	if err != nil {
 		return nil, err
 	}
-	return parseAssignments(raw, tabs)
+	return parseAssignments(raw, tabs, inboxFallback)
 }
 
 func findEngine(cfg config.Config, name string) (config.EngineConfig, error) {
@@ -116,7 +122,15 @@ func findEngine(cfg config.Config, name string) (config.EngineConfig, error) {
 	return config.EngineConfig{}, fmt.Errorf("no engine named %q in config", name)
 }
 
-func buildPrompt(tabs []Tab, existingTopics []string, instruction string) string {
+func buildPrompt(tabs []Tab, existingTopics []string, instruction, guidelines string) string {
+	reorganizing := false
+	for _, t := range tabs {
+		if t.Topic != "" {
+			reorganizing = true
+			break
+		}
+	}
+
 	var b strings.Builder
 	b.WriteString("You are the filing engine for tab-wiki, a browser tab archive.\n")
 	b.WriteString("Assign each tab below to a topic and write a one-line note (max 120 chars) describing what the page is and why someone saved it.\n\n")
@@ -124,8 +138,14 @@ func buildPrompt(tabs []Tab, existingTopics []string, instruction string) string
 	b.WriteString("- STRONGLY prefer an existing topic. Only propose a new topic when nothing fits; name it in kebab-case.\n")
 	b.WriteString("- If you cannot classify a tab with confidence, use the topic \"inbox\".\n")
 	b.WriteString("- Notes are plain text: no markdown, no quotes, no newlines.\n")
+	if reorganizing {
+		b.WriteString("- These tabs are already filed; each lists its current topic. Keep a tab in its current topic unless the user's guidance or a clearly better fit says to move it. When keeping a tab, still include it in your answer with its current topic.\n")
+	}
 	if instruction != "" {
 		b.WriteString("- User guidance for this run: " + instruction + "\n")
+	}
+	if guidelines != "" {
+		b.WriteString("\nStanding user guidelines for grouping (always apply):\n" + guidelines + "\n")
 	}
 	b.WriteString("\nExisting topics:\n")
 	if len(existingTopics) == 0 {
@@ -137,6 +157,9 @@ func buildPrompt(tabs []Tab, existingTopics []string, instruction string) string
 	b.WriteString("\nTabs:\n")
 	for i, t := range tabs {
 		fmt.Fprintf(&b, "%d. url: %s\n   title: %s\n", i+1, t.URL, t.Title)
+		if t.Topic != "" {
+			fmt.Fprintf(&b, "   current topic: %s\n", t.Topic)
+		}
 		if t.Snippet != "" {
 			fmt.Fprintf(&b, "   snippet: %s\n", t.Snippet)
 		}
@@ -181,8 +204,8 @@ func invoke(cfg config.Config, eng config.EngineConfig, prompt string) (string, 
 
 // parseAssignments validates engine output tab-by-tab: valid assignments are
 // kept, anything malformed or unknown falls back to the inbox rather than
-// failing the whole Clean.
-func parseAssignments(raw string, tabs []Tab) ([]Assignment, error) {
+// failing the whole Clean (or is omitted entirely when inboxFallback is off).
+func parseAssignments(raw string, tabs []Tab, inboxFallback bool) ([]Assignment, error) {
 	m := markerRe.FindStringSubmatch(raw)
 	if m == nil {
 		return nil, fmt.Errorf("no <tabwiki> block in engine output")
@@ -206,7 +229,7 @@ func parseAssignments(raw string, tabs []Tab) ([]Assignment, error) {
 	for _, t := range tabs {
 		if a, ok := byURL[t.URL]; ok && a.Topic != "" {
 			out = append(out, a)
-		} else {
+		} else if inboxFallback {
 			out = append(out, Assignment{URL: t.URL, Topic: "inbox", Note: ""})
 		}
 	}

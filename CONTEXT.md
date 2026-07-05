@@ -33,6 +33,14 @@ _Avoid_: Unsorted, misc, uncategorized
 The command that re-runs the Engine over the Inbox, optionally guided by a user instruction, distributing Entries into real Topics.
 _Avoid_: Reclassify, retry
 
+**Reorganize**:
+The command that runs the Engine over the whole Archive with a user instruction, moving Entries between Topics; Entries the Engine does not mention stay where they are, and existing Notes are preserved.
+_Avoid_: Regroup, restructure
+
+**Guidelines**:
+The user's standing grouping guidance (guidelines.md), injected into every Engine invocation so unique or project-specific Topics are respected from the first Clean.
+_Avoid_: Rules, preferences, config
+
 **Entry**:
 One captured tab recorded in a Topic: its title, URL, Note, capture date, and last-opened date.
 Restoring an Entry through Explore opens the tab and updates last-opened; the Entry stays in the Archive until explicitly deleted (wiki semantics, not stack semantics).

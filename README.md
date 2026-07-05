@@ -75,6 +75,8 @@ the native host for it automatically. No ID copying needed.
 | Switch Engine/model | Dropdowns in the popup |
 | Undo a Clean | Button on the Receipt (latest Clean only, while the Receipt is open) |
 | Refile the Inbox | Button on the Inbox card in Explore, with optional guidance |
+| Reorganize topics | "Reorganize..." in Explore's toolbar - describe the regrouping, the Engine moves entries |
+| Standing grouping rules | Edit `~/tab-wiki/guidelines.md` - read by the Engine on every Clean/Refile/Reorganize |
 
 ## The Archive
 
@@ -83,6 +85,7 @@ the native host for it automatically. No ID copying needed.
 ├── topics/*.md      # the wiki: one file per Topic, one line per Entry
 ├── cleans/*.json    # machine-owned log per Clean (receipts + undo)
 ├── config.json      # engines, models, staleness threshold, auto-push
+├── guidelines.md    # standing grouping guidance, injected into every filing prompt
 └── tabignore        # excluded domains: "x.com" = domain+subdomains, bare word = substring
 ```
 

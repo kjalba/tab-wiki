@@ -94,7 +94,7 @@ func Clean(dir string, cfg config.Config, tabs []engine.Tab, excluded ExcludedCo
 	topicFor := map[string]string{}
 	if len(newTabs)+len(retitled) > 0 {
 		batch := append(append([]engine.Tab{}, newTabs...), retitled...)
-		assignments, err := engine.File(cfg, batch, topicNames(topics), "")
+		assignments, err := engine.File(cfg, batch, topicNames(topics), "", Guidelines(dir), true)
 		if err != nil {
 			engineErr = err
 		} else {
@@ -270,6 +270,76 @@ func Undo(dir string, cfg config.Config, cleanID string) ([]engine.Tab, error) {
 	return log.Tabs, nil
 }
 
+// Reorganize runs the Engine over every Entry in the Archive with the user's
+// instruction and moves Entries whose assigned Topic changed. Entries the
+// Engine does not mention stay exactly where they are (no inbox fallback),
+// and existing Notes are preserved.
+func Reorganize(dir string, cfg config.Config, instruction string) (moved int, err error) {
+	topics, err := LoadTopics(dir)
+	if err != nil {
+		return 0, err
+	}
+
+	type source struct {
+		topic string
+		line  string
+		entry Entry
+	}
+	var batch []engine.Tab
+	var sources []source
+	for _, t := range topics {
+		var lineIdxs []int
+		for i := range t.Entries {
+			lineIdxs = append(lineIdxs, i)
+		}
+		sort.Ints(lineIdxs)
+		for _, i := range lineIdxs {
+			e := t.Entries[i]
+			batch = append(batch, engine.Tab{URL: e.URL, Title: e.Title, Snippet: e.Note, Topic: t.Name})
+			sources = append(sources, source{topic: t.Name, line: t.Lines[i], entry: e})
+		}
+	}
+	if len(batch) == 0 {
+		return 0, nil
+	}
+
+	assignments, err := engine.File(cfg, batch, topicNames(topics), instruction, Guidelines(dir), false)
+	if err != nil {
+		return 0, err
+	}
+	assignFor := map[string]engine.Assignment{}
+	for _, a := range assignments {
+		assignFor[NormalizeURL(a.URL)] = a
+	}
+
+	for _, s := range sources {
+		a, ok := assignFor[NormalizeURL(s.entry.URL)]
+		if !ok || a.Topic == "" || a.Topic == s.topic {
+			continue
+		}
+		e := s.entry
+		if e.Note == "" && a.Note != "" {
+			e.Note = a.Note
+		}
+		if err := appendEntry(dir, a.Topic, FormatEntry(e)); err != nil {
+			return moved, err
+		}
+		if _, err := removeLine(dir, s.topic, s.line); err != nil {
+			return moved, err
+		}
+		moved++
+	}
+	gitutil.Commit(dir, fmt.Sprintf("Reorganize: %d entries moved (%s)", moved, truncate(instruction, 60)), cfg.AutoPush)
+	return moved, nil
+}
+
+func truncate(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	return s[:n] + "..."
+}
+
 // AddIgnoreDomain appends a domain to the tabignore file (idempotent).
 func AddIgnoreDomain(dir string, cfg config.Config, domain string) error {
 	domain = strings.ToLower(strings.TrimSpace(domain))
@@ -403,7 +473,7 @@ func Refile(dir string, cfg config.Config, instruction string) (moved, remaining
 	if err != nil {
 		return 0, 0, err
 	}
-	assignments, err := engine.File(cfg, batch, topicNames(topics), instruction)
+	assignments, err := engine.File(cfg, batch, topicNames(topics), instruction, Guidelines(dir), true)
 	if err != nil {
 		return 0, len(inbox.Entries), err
 	}
