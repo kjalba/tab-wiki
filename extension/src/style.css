@@ -156,3 +156,16 @@ ul.entries .grow { flex: 1; min-width: 0; }
 
 .toolbar { display: flex; gap: 10px; margin-bottom: 16px; align-items: center; }
 .toolbar input { flex: 1; }
+
+.engine-card { margin-bottom: 16px; }
+.engine-card summary { cursor: pointer; font-size: 14px; }
+.engine-card summary::marker { color: var(--dim); }
+.engine-row-wrap {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.engine-row-wrap .engine-list { min-width: 240px; max-width: 300px; }
+.engine-row-wrap .model-row { display: flex; flex-direction: column; gap: 6px; min-width: 200px; }
+.engine-row-wrap .model-row label { color: var(--dim); font-size: 12px; }

@@ -11,8 +11,20 @@
     <p class="dim" id="subtitle">Loading the Archive...</p>
     <div class="toolbar">
       <input type="text" id="filter" placeholder="Filter entries by title, URL, note, or topic..." />
-      <button id="reorganize" title="Tell the Engine how to regroup existing entries">Reorganize...</button>
       <button id="refresh">Refresh</button>
+    </div>
+
+    <details class="card engine-card" id="engineCard">
+      <summary>Engine: <span id="engineSummary" class="dim">loading...</span></summary>
+      <p class="dim" style="margin:10px 0 6px">Used by Reorganize and Refile (and the next Clean).</p>
+      <div class="engine-row-wrap">
+        <div id="engines" class="engine-list"></div>
+        <div class="model-row"><label for="model">Model</label><select id="model"></select></div>
+      </div>
+    </details>
+
+    <div class="toolbar">
+      <button id="reorganize" class="primary" title="Tell the Engine how to regroup existing entries">Reorganize entries...</button>
     </div>
     <div id="topics"></div>
   </div>

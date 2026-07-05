@@ -1,4 +1,5 @@
-import { api, CompanionResponse, Entry, ExploreTopic, PageMessage } from "./types";
+import { api, CompanionResponse, displayModel, Entry, ExploreTopic, PageMessage } from "./types";
+import { mountEnginePicker } from "./enginePicker";
 
 function send<T = CompanionResponse>(msg: PageMessage): Promise<T> {
   return api.runtime.sendMessage(msg) as Promise<T>;
@@ -7,6 +8,14 @@ function send<T = CompanionResponse>(msg: PageMessage): Promise<T> {
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
 let topics: ExploreTopic[] = [];
+let currentEngine = "";
+let currentModel = "";
+
+function setEngineSummary(engine: string, model: string) {
+  currentEngine = engine;
+  currentModel = model;
+  $("engineSummary").textContent = `${engine} / ${displayModel(model)}`;
+}
 
 function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) =>
@@ -157,7 +166,9 @@ $("filter").addEventListener("input", render);
 $("refresh").addEventListener("click", () => void load());
 $("reorganize").addEventListener("click", async () => {
   const instruction = prompt(
-    'Describe how to regroup existing entries, e.g.\n' +
+    `Reorganize using ${currentEngine} / ${displayModel(currentModel)} ` +
+      `(change it in the Engine panel above).\n\n` +
+      'Describe how to regroup existing entries, e.g.\n' +
       '"merge clothes-shopping and tech-shopping into shopping" or\n' +
       '"everything about my foo project (repo, docs, issues) goes under foo-project"'
   );
@@ -167,10 +178,14 @@ $("reorganize").addEventListener("click", async () => {
   btn.textContent = "Reorganizing...";
   const r = await send({ kind: "reorganize", instruction: instruction.trim() });
   btn.disabled = false;
-  btn.textContent = "Reorganize...";
+  btn.textContent = "Reorganize entries...";
   alert(r.ok ? `Moved ${r.moved ?? 0} entries.` : `Reorganize failed: ${r.error}`);
   await load();
 });
+
+void mountEnginePicker($("engines"), $<HTMLSelectElement>("model"), setEngineSummary).then(
+  (picker) => setEngineSummary(picker.activeEngine, picker.activeModel)
+);
 void load().catch((e: Error) => {
   $("subtitle").textContent = e.message;
   $("subtitle").className = "error";
