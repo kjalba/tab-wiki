@@ -72,8 +72,51 @@ BUILD INSTRUCTIONS (source zip attached): requires Node.js 20+.
 Output in extension/dist/firefox/ is byte-identical to the uploaded package (esbuild bundling from TypeScript in extension/src/, no minification). The build entry point is extension/build.mjs.
 ```
 
-For CWS, additionally paste the per-permission justifications into the Privacy
-practices tab (one box per permission - split the PERMISSIONS paragraph above).
+## CWS Privacy tab (submitted answers)
+
+**Single purpose description:**
+
+```
+Tab Wiki has one narrow purpose: relieving browser tab overload by archiving open tabs into a local wiki and restoring them later. On the user's explicit command ("Clean"), it captures each open tab's title and URL, groups them into topics, closes the tabs, and stores everything as plain Markdown files on the user's own computer via a local companion app. The user later browses that archive ("Explore") to reopen, review, or delete saved tabs. Every feature (per-tab exclusion, undo, topic reorganization) serves this one tab-archiving purpose. There is no other functionality: no content modification, no browsing features, no analytics, and the extension itself makes no network requests.
+```
+
+**tabs:**
+
+```
+Core to the single purpose. The extension enumerates open tabs (title and URL) only when the user explicitly runs Clean, so they can be archived; closes those tabs after the local companion app confirms they are safely written to disk; and reopens tabs when the user restores them from the archive or presses Undo on the receipt page. There is no continuous tab monitoring - tab data is read solely at the moment the user invokes Clean.
+```
+
+**nativeMessaging:**
+
+```
+All storage and AI processing happen in a local, open-source companion app (a native messaging host) that the user installs separately - the same architecture password managers like 1Password or KeePassXC-Browser use. The extension sends captured tab data to this companion, which writes Markdown files in the user's home directory and invokes an AI command-line tool the user has installed and authenticated themselves. Without this permission the extension cannot store anything and shows a clear error. No remote servers are involved. Companion source code: https://github.com/kjalba/tab-wiki
+```
+
+**scripting:**
+
+```
+When the user runs Clean, a one-shot script reads each open tab's meta description and roughly the first 1.2 KB of visible text. This snippet lets the AI group pages whose titles are uninformative (e.g. "Untitled document" or "Dashboard"). The script executes once per tab at Clean time only, is never persistent, listens to nothing, and injects or modifies nothing on any page. Tabs on domains the user excluded (via their ignore file or the per-tab toggle) are never executed against or read at all.
+```
+
+**storage:**
+
+```
+Stores small session-scoped UI state only: which tabs the user marked as excluded from the next Clean, the receipt of the most recent Clean (to power the Undo button), and which topic sections the user collapsed on the Explore page. No browsing data is kept in extension storage - the archive itself lives in local files managed by the companion app on the user's machine.
+```
+
+**Host permission:**
+
+```
+<all_urls> is required because the user may archive tabs from any website: the one-shot Clean snippet script (see scripting justification) must be able to run on whatever pages the user happens to have open at the moment they invoke Clean. The permission is used solely to read a short text snippet from already-open tabs at the user's explicit command. The extension makes no network requests to any host, and domains the user excluded are never accessed.
+```
+
+**Remote code:** No.
+
+**Data usage:** check "Web history" and "Website content" only (tab URLs/titles
+are archived; page snippets are read and sent to the user's own AI provider -
+matches the privacy policy). Certify all three disclosure statements.
+
+**Privacy policy URL:** https://github.com/kjalba/tab-wiki/blob/main/docs/PRIVACY.md
 
 ## Assets needed (create before submitting)
 
