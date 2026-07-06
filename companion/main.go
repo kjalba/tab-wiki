@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/kjalba/tab-wiki/companion/internal/archive"
 	"github.com/kjalba/tab-wiki/companion/internal/config"
@@ -120,7 +121,7 @@ func dispatch(dir string, req request) response {
 	case "status":
 		return response{
 			OK:           true,
-			ArchivePath:  dir,
+			ArchivePath:  tildePath(dir),
 			Engines:      engine.Statuses(cfg),
 			ActiveEngine: cfg.ActiveEngine,
 			ActiveModel:  cfg.ActiveModel,
@@ -223,6 +224,22 @@ func dispatch(dir string, req request) response {
 	default:
 		return errResp(fmt.Errorf("unknown command %q", req.Cmd))
 	}
+}
+
+// tildePath abbreviates the home directory to ~ for display (the path is
+// shown in the popup and appears in screenshots; no usernames there).
+func tildePath(p string) string {
+	home, err := os.UserHomeDir()
+	if err != nil || home == "" {
+		return p
+	}
+	if p == home {
+		return "~"
+	}
+	if strings.HasPrefix(p, home+string(os.PathSeparator)) {
+		return "~" + p[len(home):]
+	}
+	return p
 }
 
 func withLock(dir string, fn func() response) response {
